@@ -1,0 +1,45 @@
+replicaCount: 1
+
+image:
+  repository: bottomhalflimited/hb-svc-notification
+  pullPolicy: Always
+  tag: "latest"
+
+service:
+  type: ClusterIP
+  port: 8107
+  name: "notification-service"
+
+namespace: hb
+fullnameOverride: "notification-deployment"
+
+env:
+  profile: prod
+  SPRING_PROFILES_ACTIVE: prod
+
+configData:
+  profile: prod
+  SPRING_PROFILES_ACTIVE: prod
+
+serviceAccount:
+  create: true
+  annotations: {}
+  name: ""
+
+rbac:
+  create: true
+
+resources:
+  limits:
+    cpu: 1000m
+    memory: 1024Mi
+  requests:
+    cpu: 100m
+    memory: 512Mi
+
+autoscaling:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 10
+  targetCPUUtilizationPercentage: 80
+  targetMemoryUtilizationPercentage: 80

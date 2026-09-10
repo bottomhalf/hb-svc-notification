@@ -1,0 +1,73 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "hb-svc-notification.fullname" . }}
+  namespace: {{ .Values.namespace }}
+  labels:
+    {{- include "hb-svc-notification.labels" . | nindent 4 }}
+spec:
+  {{- if not .Values.autoscaling.enabled }}
+  replicas: {{ .Values.replicaCount }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "hb-svc-notification.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: {{ .Values.service.port | quote }}
+        prometheus.io/path: "/actuator/prometheus"
+      labels:
+        {{- include "hb-svc-notification.selectorLabels" . | nindent 8 }}
+        loki.io/scrape: "true"
+    spec:
+      serviceAccountName: {{ include "hb-svc-notification.serviceAccountName" . }}
+      initContainers:
+        - name: otel-agent
+          image: busybox:latest
+          command:
+            - sh
+            - -c
+            - "wget -O /otel/opentelemetry-javaagent.jar https://github.com/open-telemetry/opentelemetry-java-instrumentation/releases/latest/download/opentelemetry-javaagent.jar"
+          volumeMounts:
+            - name: otel-agent-volume
+              mountPath: /otel
+      containers:
+        - name: {{ .Chart.Name }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.service.port }}
+              protocol: TCP
+          env:
+            - name: OTEL_SERVICE_NAME
+              value: {{ include "hb-svc-notification.fullname" . | quote }}
+            - name: OTEL_EXPORTER_OTLP_ENDPOINT
+              value: "http://bt-otel-collector-helm.bt.svc.cluster.local:4317"
+            - name: OTEL_EXPORTER_OTLP_PROTOCOL
+              value: "grpc"
+            - name: OTEL_TRACES_EXPORTER
+              value: "otlp"
+            - name: OTEL_METRICS_EXPORTER
+              value: "otlp"
+            - name: OTEL_LOGS_EXPORTER
+              value: "otlp"
+            - name: JAVA_TOOL_OPTIONS
+              value: "-javaagent:/otel/opentelemetry-javaagent.jar"
+            {{- range $key, $val := .Values.env }}
+            - name: {{ $key }}
+              value: {{ $val | quote }}
+            {{- end }}
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          envFrom:
+            - configMapRef:
+                name: {{ include "hb-svc-notification.fullname" . }}-config
+          volumeMounts:
+            - name: otel-agent-volume
+              mountPath: /otel
+      volumes:
+        - name: otel-agent-volume
+          emptyDir: {}

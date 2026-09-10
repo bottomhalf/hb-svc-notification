@@ -1,0 +1,47 @@
+server:
+  port: 8107
+
+spring:
+  profiles:
+    active: ${profile:dev}
+  application:
+    name: notification-service
+
+  cloud:
+    config:
+      enabled: false
+
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS:localhost:9092,localhost:9093,localhost:9094}
+    consumer:
+      group-id: ${KAFKA_CONSUMER_GROUP_ID:bh-notification-group}
+      auto-offset-reset: earliest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+
+  jackson:
+    date-format: yyyy-MM-dd HH:mm:ss
+
+  mvc:
+    static-path-pattern: /applicationfiles/**
+
+## MULTIPART PROPERTIES
+  servlet:
+    multipart:
+      enabled: true
+      file-size-threshold: 2MB
+      max-file-size: 50MB
+      max-request-size: 50MB
+
+kafka:
+  topic:
+    hb-post-event: ${KAFKA_TOPIC_HB_POST_EVENT:hb-post-create-update-event}
+  group_id: ${KAFKA_CONSUMER_GROUP_ID:bh-notification-group}
+  max_retries: ${KAFKA_MAX_RETRIES:3}
+
+logging:
+  level:
+    org.springframework.web: DEBUG
+
+fierhub:
+  token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhY2Nlc3MiOiJhbnkiLCJuYmYiOjE3NjA3MjIzMzcsImV4cCI6MTc5MzQ3MTM0MCwiaWF0IjoxNzYwNzIyMzM3fQ.xrUyENjoJydC0mTBgOsxawQ3m42uPNhL4dvz5a1PLC4_tid11_fid5

@@ -1,0 +1,25 @@
+spring:
+  cloud:
+    config:
+      enabled: false
+
+  kafka:
+    bootstrap-servers: localhost:9092,localhost:9093,localhost:9094
+    consumer:
+      group-id: bh-notification-group
+      auto-offset-reset: earliest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+
+
+kafka:
+  brokers:
+    - localhost:9092
+    - localhost:9093
+    - localhost:9094
+  topic: hb-post-create-update-event
+  group_id: bh-notification-group
+  max_retries: 3
+
+fierhub:
+  token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhY2Nlc3MiOiJhbnkiLCJuYmYiOjE3NjA3MjIzMzcsImV4cCI6MTc5MzQ3MTM0MCwiaWF0IjoxNzYwNzIyMzM3fQ.xrUyENjoJydC0mTBgOsxawQ3m42uPNhL4dvz5a1PLC4_tid11_cid=22
