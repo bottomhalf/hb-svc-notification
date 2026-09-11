@@ -14,25 +14,31 @@ spec:
       {{- include "hb-svc-notification.selectorLabels" . | nindent 6 }}
   template:
     metadata:
+      {{- if and .Values.observability .Values.observability.enabled (and .Values.observability.prometheus .Values.observability.prometheus.enabled) }}
       annotations:
         prometheus.io/scrape: "true"
         prometheus.io/port: {{ .Values.service.port | quote }}
-        prometheus.io/path: "/actuator/prometheus"
+        prometheus.io/path: {{ .Values.observability.prometheus.path | default "/actuator/prometheus" | quote }}
+      {{- end }}
       labels:
         {{- include "hb-svc-notification.selectorLabels" . | nindent 8 }}
+        {{- if and .Values.observability .Values.observability.enabled (and .Values.observability.loki .Values.observability.loki.enabled) }}
         loki.io/scrape: "true"
+        {{- end }}
     spec:
       serviceAccountName: {{ include "hb-svc-notification.serviceAccountName" . }}
+      {{- if and .Values.observability .Values.observability.enabled (and .Values.observability.otel .Values.observability.otel.enabled) }}
       initContainers:
         - name: otel-agent
-          image: busybox:latest
+          image: {{ .Values.observability.otel.javaagent.image | default "busybox:latest" | quote }}
           command:
             - sh
             - -c
-            - "wget -O /otel/opentelemetry-javaagent.jar https://github.com/open-telemetry/opentelemetry-java-instrumentation/releases/latest/download/opentelemetry-javaagent.jar"
+            - "wget -O /otel/opentelemetry-javaagent.jar {{ .Values.observability.otel.javaagent.downloadUrl | default "https://github.com/open-telemetry/opentelemetry-java-instrumentation/releases/latest/download/opentelemetry-javaagent.jar" }}"
           volumeMounts:
             - name: otel-agent-volume
               mountPath: /otel
+      {{- end }}
       containers:
         - name: {{ .Chart.Name }}
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
@@ -42,20 +48,22 @@ spec:
               containerPort: {{ .Values.service.port }}
               protocol: TCP
           env:
+            {{- if and .Values.observability .Values.observability.enabled (and .Values.observability.otel .Values.observability.otel.enabled) }}
             - name: OTEL_SERVICE_NAME
               value: {{ include "hb-svc-notification.fullname" . | quote }}
             - name: OTEL_EXPORTER_OTLP_ENDPOINT
-              value: "http://bt-otel-collector-helm.bt.svc.cluster.local:4317"
+              value: {{ .Values.observability.otel.endpoint | quote }}
             - name: OTEL_EXPORTER_OTLP_PROTOCOL
-              value: "grpc"
+              value: {{ .Values.observability.otel.protocol | default "grpc" | quote }}
             - name: OTEL_TRACES_EXPORTER
-              value: "otlp"
+              value: {{ .Values.observability.otel.tracesExporter | default "otlp" | quote }}
             - name: OTEL_METRICS_EXPORTER
-              value: "otlp"
+              value: {{ .Values.observability.otel.metricsExporter | default "otlp" | quote }}
             - name: OTEL_LOGS_EXPORTER
-              value: "otlp"
+              value: {{ .Values.observability.otel.logsExporter | default "otlp" | quote }}
             - name: JAVA_TOOL_OPTIONS
               value: "-javaagent:/otel/opentelemetry-javaagent.jar"
+            {{- end }}
             {{- range $key, $val := .Values.env }}
             - name: {{ $key }}
               value: {{ $val | quote }}
@@ -65,9 +73,13 @@ spec:
           envFrom:
             - configMapRef:
                 name: {{ include "hb-svc-notification.fullname" . }}-config
+          {{- if and .Values.observability .Values.observability.enabled (and .Values.observability.otel .Values.observability.otel.enabled) }}
           volumeMounts:
             - name: otel-agent-volume
               mountPath: /otel
+          {{- end }}
+      {{- if and .Values.observability .Values.observability.enabled (and .Values.observability.otel .Values.observability.otel.enabled) }}
       volumes:
         - name: otel-agent-volume
           emptyDir: {}
+      {{- end }}

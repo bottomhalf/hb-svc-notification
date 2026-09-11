@@ -43,3 +43,27 @@ autoscaling:
   maxReplicas: 10
   targetCPUUtilizationPercentage: 80
   targetMemoryUtilizationPercentage: 80
+
+# ==============================================================================
+# Observability Configuration (OTel, Tempo, Loki, OTel Collector, Prometheus)
+# ==============================================================================
+# All observability operations are DISABLED by default.
+# To easily re-enable: change `enabled: false` to `enabled: true`
+# or run helm with `--set observability.enabled=true`
+observability:
+  enabled: false
+  otel:
+    enabled: true
+    endpoint: "http://bt-otel-collector-helm.bt.svc.cluster.local:4317"
+    protocol: "grpc"
+    tracesExporter: "otlp"
+    metricsExporter: "otlp"
+    logsExporter: "otlp"
+    javaagent:
+      image: "busybox:latest"
+      downloadUrl: "https://github.com/open-telemetry/opentelemetry-java-instrumentation/releases/latest/download/opentelemetry-javaagent.jar"
+  prometheus:
+    enabled: true
+    path: "/actuator/prometheus"
+  loki:
+    enabled: true
