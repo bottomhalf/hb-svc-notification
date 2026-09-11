@@ -45,3 +45,36 @@ logging:
 
 fierhub:
   token: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJhY2Nlc3MiOiJhbnkiLCJuYmYiOjE3NjA3MjIzMzcsImV4cCI6MTc5MzQ3MTM0MCwiaWF0IjoxNzYwNzIyMzM3fQ.xrUyENjoJydC0mTBgOsxawQ3m42uPNhL4dvz5a1PLC4_tid11_fid5
+
+# ==============================================================================
+# Observability Configuration (OTel, Tempo, Loki, OTel Collector, Prometheus)
+# ==============================================================================
+# All observability operations are DISABLED by default for the application.
+# To easily re-enable later: change `disabled: true` to `false` and exporters to `otlp`
+# or set environment variable OTEL_SDK_DISABLED=false or JVM argument -Dotel.sdk.disabled=false
+otel:
+  sdk:
+    disabled: ${OTEL_SDK_DISABLED:true}
+  traces:
+    exporter: ${OTEL_TRACES_EXPORTER:none}
+  metrics:
+    exporter: ${OTEL_METRICS_EXPORTER:none}
+  logs:
+    exporter: ${OTEL_LOGS_EXPORTER:none}
+  exporter:
+    otlp:
+      endpoint: ${OTEL_EXPORTER_OTLP_ENDPOINT:http://bt-otel-collector-helm.bt.svc.cluster.local:4317}
+      protocol: ${OTEL_EXPORTER_OTLP_PROTOCOL:grpc}
+
+management:
+  tracing:
+    enabled: false
+  endpoints:
+    enabled-by-default: false
+    web:
+      exposure:
+        include: "health,info"
+  prometheus:
+    metrics:
+      export:
+        enabled: false
